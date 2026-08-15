@@ -5,7 +5,7 @@ import { Student } from '../students/entities/student.entity';
 import { Instructor } from '../instructors/entities/instructor.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 // import { ChangePasswordDto } from './dto/change-password.dto';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
