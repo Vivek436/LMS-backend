@@ -211,34 +211,49 @@ export class EnrollmentsService {
     return updated;
   }
 
-  // UPDATE PROGRESS
+  // UPDATE PROGRESS — recalculates live from DB, does not trust frontend values
   async updateProgress(
     id: string,
     dto: UpdateProgressDto,
   ): Promise<Enrollment> {
     const enrollment = await this.findOne(id);
 
-    if (enrollment.status !== EnrollmentStatus.ACTIVE) {
-      throw new BadRequestException(
-        "Sirf active enrollment ka progress update ho sakta hai",
-      );
-    }
+    // Allow progress update even for completed enrollments so that
+    // adding new lessons correctly resets progress below 100%
+    const db = this.enrollmentModel.db;
+    const courseId = enrollment.courseId as any;
+    const courseObjId = typeof courseId === 'string'
+      ? new Types.ObjectId(courseId)
+      : courseId;
 
-    enrollment.progressPercent = dto.progressPercent;
-    if (dto.lessonsCompleted !== undefined) {
-      enrollment.lessonsCompleted = dto.lessonsCompleted;
-    }
+    // Count total published lessons for this course
+    const sections = await db.collection('sections').find({ courseId: courseObjId }).toArray();
+    const sectionIds = sections.map((s: any) => s._id);
+    const total = sectionIds.length > 0
+      ? await db.collection('lessons').countDocuments({ sectionId: { $in: sectionIds } })
+      : 0;
 
-    // Auto-complete agar 100%
-    if (
-      dto.progressPercent === 100 &&
-      enrollment.status === EnrollmentStatus.ACTIVE
-    ) {
+    // Count completed lessons for this enrollment
+    const completedCount = await db.collection('lessonprogresses').countDocuments({
+      enrollmentId: new Types.ObjectId(id),
+      $or: [{ status: 'completed' }, { isCompleted: true }],
+    });
+
+    const percentage = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+
+    enrollment.progressPercent = percentage;
+    enrollment.lessonsCompleted = completedCount;
+
+    if (percentage === 100 && enrollment.status === EnrollmentStatus.ACTIVE) {
       enrollment.status = EnrollmentStatus.COMPLETED;
       enrollment.completedAt = new Date();
       await this.studentsService.markCourseCompleted(
         enrollment.studentId.toString(),
       );
+    } else if (percentage < 100 && enrollment.status === EnrollmentStatus.COMPLETED) {
+      // Instructor added new lessons — reopen the enrollment
+      enrollment.status = EnrollmentStatus.ACTIVE;
+      enrollment.completedAt = null;
     }
 
     return enrollment.save();

@@ -110,10 +110,12 @@ export class LessonProgressService {
             // Fetch enrollment
             const enrollment = await db.collection('enrollments').findOne({ _id: enrollmentObjId });
 
-            // Get all progress for this enrollment
+            // Count completed lessons for this enrollment
             const allProgress = await this.lessonProgressModel.find({ enrollmentId });
             const completed = allProgress.filter((p) => p.status === LessonProgressStatus.COMPLETED || p.isCompleted).length;
 
+            // Always use live lesson count from DB so that new lessons added by instructor
+            // are immediately reflected in the progress percentage
             let total = 0;
             if (enrollment?.courseId) {
                 const courseObjId = typeof enrollment.courseId === 'string'
@@ -127,6 +129,7 @@ export class LessonProgressService {
                 }
             }
 
+            // Fallback only when sections/lessons are missing (shouldn't happen in practice)
             if (total === 0) {
                 total = allProgress.length;
             }
@@ -140,16 +143,22 @@ export class LessonProgressService {
 
             if (percentage === 100) {
                 updateFields.status = 'completed';
+                if (!enrollment?.completedAt) {
+                    updateFields.completedAt = new Date();
+                }
+            } else if (percentage < 100 && enrollment?.status === 'completed') {
+                // Instructor added new lessons — reopen the enrollment
+                updateFields.status = 'active';
+                updateFields.completedAt = null;
             }
 
-            // Update enrollment
             await db.collection('enrollments').updateOne(
                 { _id: enrollmentObjId },
                 { $set: updateFields },
             );
 
         } catch (error) {
-            console.error('Error updating enrollment progress:', error);
+            // Silent fail — progress will be corrected on next interaction
         }
     }
 
