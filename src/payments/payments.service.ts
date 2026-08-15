@@ -116,12 +116,7 @@ export class PaymentsService {
         }
 
         // Update enrollment with payment details
-        console.log('💳 Before update - Enrollment:', {
-            _id: enrollment._id,
-            studentId: enrollment.studentId,
-            courseId: enrollment.courseId,
-            paymentStatus: enrollment.paymentStatus,
-        });
+     
 
         enrollment.paymentStatus = PaymentStatus.PAID;
         enrollment.amountPaid = session.amount_total / 100; // Convert from paise to rupees
@@ -129,13 +124,7 @@ export class PaymentsService {
         enrollment.paymentReference = session.payment_intent as string;
         await enrollment.save();
 
-        console.log('✅ After update - Enrollment saved:', {
-            _id: enrollment._id,
-            studentId: enrollment.studentId,
-            courseId: enrollment.courseId,
-            paymentStatus: enrollment.paymentStatus,
-            amountPaid: enrollment.amountPaid,
-        });
+     
 
         // Update course enrollment count
         await this.courseModel.findByIdAndUpdate(enrollment.courseId, {

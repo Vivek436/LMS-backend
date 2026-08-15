@@ -16,8 +16,6 @@ export class UsersService {
     ) { }
 
     async findById(id: string): Promise<any> {
-        console.log('Finding user by ID:', id);
-
         // Try to find in students first
         const student = await this.studentModel.findById(id).exec();
         if (student) {
@@ -34,8 +32,6 @@ export class UsersService {
     }
 
     async updateProfile(id: string, updateUserDto: UpdateUserDto): Promise<any> {
-        console.log('Updating user profile:', id, updateUserDto);
-
         // Try to update in students first
         const student = await this.studentModel.findByIdAndUpdate(
             id,
@@ -44,7 +40,6 @@ export class UsersService {
         ).select('-password').exec();
 
         if (student) {
-            console.log('Student updated successfully:', student._id);
             return { ...student.toObject(), role: 'student' };
         }
 
@@ -56,17 +51,13 @@ export class UsersService {
         ).exec();
 
         if (instructor) {
-            console.log('Instructor updated successfully:', instructor._id);
             return { ...instructor.toObject(), role: 'instructor' };
         }
 
-        console.log('User not found for update:', id);
         throw new NotFoundException('User not found');
     }
 
     async changePassword(id: string, changePasswordDto: ChangePasswordDto): Promise<void> {
-        console.log('Changing password for user:', id);
-
         const { currentPassword, newPassword } = changePasswordDto;
 
         // Find user first
@@ -102,8 +93,6 @@ export class UsersService {
     }
 
     async getUserStats(id: string): Promise<any> {
-        console.log('Getting user stats for:', id);
-
         const user = await this.findById(id);
         const stats: any = {};
 

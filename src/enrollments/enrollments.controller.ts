@@ -9,6 +9,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,7 +17,11 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 import { EnrollmentsService } from './enrollments.service';
 import {
   CreateEnrollmentDto,
@@ -30,6 +35,8 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('Enrollments')
 @Controller('enrollments')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class EnrollmentsController {
   constructor(private readonly enrollmentsService: EnrollmentsService) { }
 
@@ -43,6 +50,8 @@ export class EnrollmentsController {
   }
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'instructor')
   @ApiOperation({ summary: 'Saare enrollments list karo (filters available)' })
   @ApiQuery({ name: 'studentId', required: false, description: 'Filter by student MongoDB ID' })
   @ApiQuery({ name: 'courseId', required: false, description: 'Filter by course MongoDB ID' })
@@ -65,6 +74,8 @@ export class EnrollmentsController {
   }
 
   @Get('stats')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Overall enrollment statistics' })
   getStats() {
     return this.enrollmentsService.getOverallStats();
@@ -85,10 +96,11 @@ export class EnrollmentsController {
   }
 
   @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Enrollment update karo (general update)' })
   @ApiParam({ name: 'id', type: 'string', description: 'Enrollment MongoDB ID' })
   update(@Param('id') id: string, @Body() dto: UpdateEnrollmentDto) {
-    console.log('🔄 Update enrollment controller called:', { id, dto });
     return this.enrollmentsService.update(id, dto);
   }
 
@@ -107,6 +119,8 @@ export class EnrollmentsController {
   }
 
   @Patch(':id/payment')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Payment status update karo' })
   @ApiParam({ name: 'id', type: 'string' })
   updatePayment(@Param('id') id: string, @Body() dto: UpdatePaymentDto) {
@@ -114,6 +128,8 @@ export class EnrollmentsController {
   }
 
   @Patch(':id/status')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Enrollment status change karo (drop/suspend)' })
   @ApiParam({ name: 'id', type: 'string' })
   updateStatus(@Param('id') id: string, @Body() dto: UpdateEnrollmentStatusDto) {
@@ -128,6 +144,8 @@ export class EnrollmentsController {
   }
 
   @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Enrollment record delete karo (admin only)' })
   @ApiParam({ name: 'id', type: 'string' })

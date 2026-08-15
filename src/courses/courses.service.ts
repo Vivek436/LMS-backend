@@ -205,7 +205,6 @@ export class CoursesService {
 
   // Admin dashboard stats
   async getAdminStats() {
-    console.log('🔍 Getting admin stats...');
 
     try {
       // Get total counts from all collections
@@ -216,7 +215,6 @@ export class CoursesService {
         this.enrollmentModel.countDocuments(),
       ]);
 
-      console.log('📊 Admin stats:', { totalCourses, totalStudents, totalInstructors, totalEnrollments });
 
       return {
         totalCourses,

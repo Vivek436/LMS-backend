@@ -37,22 +37,18 @@ export class LessonProgressService {
     }
 
     async findByEnrollment(enrollmentId: string) {
-        console.log('🔍 Finding progress for enrollmentId:', enrollmentId);
         const results = await this.lessonProgressModel
             .find({ enrollmentId })
             .populate('lessonId')
             .exec();
-        console.log('📊 Found progress records:', results.length);
         return results;
     }
 
     async findByStudent(studentId: string) {
-        console.log('🔍 Finding progress for studentId:', studentId);
         const results = await this.lessonProgressModel
             .find({ studentId })
             .populate('lessonId')
             .exec();
-        console.log('📊 Found progress records:', results.length);
         return results;
     }
 
@@ -152,7 +148,6 @@ export class LessonProgressService {
                 { $set: updateFields },
             );
 
-            console.log(`✅ Updated enrollment ${enrollmentId}: ${completed}/${total} lessons (${percentage}%)`);
         } catch (error) {
             console.error('Error updating enrollment progress:', error);
         }

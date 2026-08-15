@@ -55,17 +55,8 @@ export class NotificationsService {
         }
 
         // Log to console (in production, send email/SMS/push notification)
-        console.log('\n=== PAYMENT SUCCESS NOTIFICATION ===');
-        console.log(`Student: ${notification.student.name} (${notification.student.email})`);
-        console.log(`Course: ${notification.course.title}`);
-        console.log(`Amount: ₹${notification.course.price}`);
-        console.log(`Payment Date: ${notification.paymentDate}`);
-        console.log(`Reference: ${notification.paymentReference}`);
         if (notification.instructor) {
-            console.log(`Instructor: ${notification.instructor.name} (${notification.instructor.email})`);
         }
-        console.log('Notified: Admin' + (notification.instructor ? ' & Instructor' : ''));
-        console.log('=====================================\n');
 
         return {
             success: true,

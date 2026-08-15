@@ -58,14 +58,7 @@ export class ResourcesController {
         }),
     )
     uploadFile(@UploadedFile() file: Express.Multer.File) {
-        console.log('📁 File upload request received');
-        console.log('File details:', {
-            originalname: file?.originalname,
-            mimetype: file?.mimetype,
-            size: file?.size,
-            filename: file?.filename,
-            path: file?.path,
-        });
+       
 
         if (!file) {
             console.error('❌ No file received');
@@ -82,7 +75,6 @@ export class ResourcesController {
             mimeType: file.mimetype,
         };
 
-        console.log('✅ File uploaded successfully:', result);
 
         return result;
     }

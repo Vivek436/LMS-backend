@@ -120,21 +120,12 @@ export class EnrollmentsService {
 
     const filter: any = {};
 
-    console.log('🔍 FindAll Enrollments - Input:', { studentId, courseId, status, paymentStatus });
-
     if (studentId) {
       filter.studentId = new Types.ObjectId(studentId);
-      console.log('📝 Filter studentId:', filter.studentId);
     }
     if (courseId) filter.courseId = new Types.ObjectId(courseId);
     if (status) filter.status = status;
     if (paymentStatus) filter.paymentStatus = paymentStatus;
-
-    console.log('🔎 Final filter:', filter);
-
-    // First, let's see ALL enrollments in the database
-    const allEnrollments = await this.enrollmentModel.find({}).limit(5).exec();
-    console.log('📦 Sample enrollments in DB:', JSON.stringify(allEnrollments, null, 2));
 
     const [enrollments, total] = await Promise.all([
       this.enrollmentModel
@@ -151,9 +142,6 @@ export class EnrollmentsService {
         .exec(),
       this.enrollmentModel.countDocuments(filter),
     ]);
-
-    console.log('✅ Found enrollments:', enrollments.length);
-    console.log('📊 Total count:', total);
 
     return {
       data: enrollments,
@@ -184,10 +172,7 @@ export class EnrollmentsService {
 
   // GENERAL UPDATE (for edit page)
   async update(id: string, dto: UpdateEnrollmentDto): Promise<Enrollment> {
-    console.log('🔄 Update enrollment service called:', { id, dto });
-
     const enrollment = await this.findOne(id);
-    console.log('📦 Current enrollment:', enrollment);
 
     // Update fields if provided
     if (dto.status !== undefined) {
@@ -223,8 +208,6 @@ export class EnrollmentsService {
     }
 
     const updated = await enrollment.save();
-    console.log('✅ Enrollment updated successfully:', updated);
-
     return updated;
   }
 

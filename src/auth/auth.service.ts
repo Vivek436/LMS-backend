@@ -70,36 +70,29 @@ export class AuthService {
     }
 
     async login(loginDto: LoginDto) {
-        console.log('Login attempt for email:', loginDto.email);
 
         // Find user with password
         const user = await this.studentModel.findOne({ email: loginDto.email }).select('+password');
 
         if (!user) {
-            console.log('User not found:', loginDto.email);
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        console.log('User found:', user.email, 'Role:', user.role);
 
         // Check password
         const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
-        console.log('Password valid:', isPasswordValid);
 
         if (!isPasswordValid) {
-            console.log('Invalid password for user:', loginDto.email);
             throw new UnauthorizedException('Invalid credentials');
         }
 
         // Check if active
         if (!user.isActive) {
-            console.log('User inactive:', loginDto.email);
             throw new UnauthorizedException('Account is inactive');
         }
 
         // Generate token
         const token = this.generateToken(user);
-        console.log('Login successful for:', user.email);
 
         return {
             user: this.sanitizeUser(user),
