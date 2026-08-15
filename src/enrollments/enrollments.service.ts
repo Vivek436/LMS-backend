@@ -143,6 +143,12 @@ export class EnrollmentsService {
       this.enrollmentModel.countDocuments(filter),
     ]);
 
+    // When fetching a student's enrollments, verify live lesson count
+    // so that certificate is not shown when instructor added new lessons
+    if (studentId) {
+      await this.syncProgressForEnrollments(enrollments as any[]);
+    }
+
     return {
       data: enrollments,
       meta: {
@@ -152,6 +158,70 @@ export class EnrollmentsService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  /**
+   * For each enrollment, recount live lessons from DB.
+   * If progress drops below 100%, reopen the enrollment.
+   * Updates are done in-place on the documents and persisted.
+   */
+  private async syncProgressForEnrollments(enrollments: any[]) {
+    const db = this.enrollmentModel.db;
+    for (const enrollment of enrollments) {
+      try {
+        const courseId = enrollment.courseId?._id || enrollment.courseId;
+        if (!courseId) continue;
+
+        const courseObjId = typeof courseId === 'string'
+          ? new Types.ObjectId(courseId)
+          : courseId;
+
+        const sections = await db.collection('sections').find({ courseId: courseObjId }).toArray();
+        const sectionIds = sections.map((s: any) => s._id);
+        if (sectionIds.length === 0) continue;
+
+        const totalLessons = await db.collection('lessons').countDocuments({
+          sectionId: { $in: sectionIds },
+        });
+        if (totalLessons === 0) continue;
+
+        const enrollmentObjId = typeof enrollment._id === 'string'
+          ? new Types.ObjectId(enrollment._id)
+          : enrollment._id;
+
+        const completedCount = await db.collection('lessonprogresses').countDocuments({
+          enrollmentId: enrollmentObjId,
+          $or: [{ status: 'completed' }, { isCompleted: true }],
+        });
+
+        const percentage = Math.round((completedCount / totalLessons) * 100);
+
+        const updateFields: any = {
+          progressPercent: percentage,
+          lessonsCompleted: completedCount,
+        };
+
+        // If previously completed but new lessons brought it below 100%, reopen
+        if (enrollment.status === 'completed' && percentage < 100) {
+          updateFields.status = 'active';
+          updateFields.completedAt = null;
+          // Patch the in-memory object too so response is fresh
+          enrollment.status = 'active';
+          enrollment.completedAt = null;
+        }
+
+        // Always patch in-memory progress so the response is up to date
+        enrollment.progressPercent = percentage;
+        enrollment.lessonsCompleted = completedCount;
+
+        await db.collection('enrollments').updateOne(
+          { _id: enrollmentObjId },
+          { $set: updateFields },
+        );
+      } catch {
+        // Non-critical — skip this enrollment silently
+      }
+    }
   }
 
   // READ ONE
@@ -167,6 +237,10 @@ export class EnrollmentsService {
     if (!enrollment) {
       throw new NotFoundException(`Enrollment with ID '${id}' not found`);
     }
+
+    // Sync progress so certificate page always reflects current lesson count
+    await this.syncProgressForEnrollments([enrollment]);
+
     return enrollment;
   }
 
