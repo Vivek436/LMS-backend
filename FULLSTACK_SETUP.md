@@ -8,7 +8,7 @@
 - RESTful API
 - MongoDB database
 - CRUD operations for Courses, Students, Instructors, Enrollments
-- Swagger documentation
+- Swagger documentationn
 
 ### Frontend (Next.js + TypeScript)
 - Modern React application
